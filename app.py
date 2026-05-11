@@ -41,7 +41,7 @@ st.markdown("""
 # ── Configure Gemini API ───────────────────────────────────
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 # ── Functions ──────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
