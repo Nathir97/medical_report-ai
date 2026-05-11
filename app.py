@@ -1,6 +1,6 @@
 import streamlit as st
-import google.generativeai as genai
 import PyPDF2
+from openai import OpenAI
 
 # ── Page Config ────────────────────────────────────────────
 st.set_page_config(
@@ -34,14 +34,16 @@ st.markdown("""
 <div class="main-header">
     <h1>🏥 MedReport AI</h1>
     <p>Understand your medical report in simple language</p>
-    <p>Powered by Google Gemini AI</p>
+    <p>Powered by DeepSeek AI</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Configure Gemini API ───────────────────────────────────
-GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+# ── Configure DeepSeek ─────────────────────────────────────
+# DeepSeek uses same format as OpenAI!
+client = OpenAI(
+    api_key=st.secrets["DEEPSEEK_API_KEY"],
+    base_url="https://api.deepseek.com"
+)
 
 # ── Functions ──────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
@@ -55,45 +57,64 @@ def extract_text_from_pdf(pdf_file):
         return f"Error reading PDF: {str(e)}"
 
 def summarize_report(report_text):
-    prompt = f"""
-    You are a friendly and helpful medical assistant.
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a friendly and helpful medical assistant.
+                Explain medical reports in very simple language that anyone
+                can understand. Use bullet points and simple words.
+                Always recommend consulting a doctor."""
+            },
+            {
+                "role": "user",
+                "content": f"""Please analyze this medical report and provide:
 
-    A patient has uploaded their medical report and needs help
-    understanding it in simple, easy language.
+1. 📋 What This Report Is About (1-2 sentences)
+2. 🔍 Key Findings (bullet points, simple language)
+3. ✅ What is Normal (list normal results)
+4. ⚠️ What Needs Attention (list abnormal results)
+5. 💊 What This Means For You (practical explanation)
+6. 🏥 Next Steps (what patient should do)
 
-    Please analyze this report and provide:
+Use very simple words. Explain any medical terms in brackets.
 
-    1. 📋 **What This Report Is About** (1-2 sentences)
-    2. 🔍 **Key Findings** (bullet points, simple language)
-    3. ✅ **What is Normal** (list the normal results)
-    4. ⚠️ **What Needs Attention** (list anything abnormal)
-    5. 💊 **What This Means For You** (practical explanation)
-    6. 🏥 **Next Steps** (what the patient should do)
+Medical Report:
+{report_text}
 
-    Use very simple words. Avoid medical jargon.
-    If you use a medical term, explain it simply in brackets.
-
-    Medical Report:
-    {report_text}
-
-    End with: "Please consult your doctor for proper medical advice."
-    """
-    response = model.generate_content(prompt)
-    return response.text
+End with: Please consult your doctor for proper medical advice."""
+            }
+        ],
+        max_tokens=1500
+    )
+    return response.choices[0].message.content
 
 def analyze_specific_question(report_text, question):
-    prompt = f"""
-    Based on this medical report, answer this question in simple language:
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a helpful medical assistant.
+                Answer questions about medical reports in simple language.
+                Always recommend consulting a doctor."""
+            },
+            {
+                "role": "user",
+                "content": f"""Based on this medical report, answer:
 
-    Question: {question}
+Question: {question}
 
-    Medical Report:
-    {report_text}
+Medical Report:
+{report_text}
 
-    Give a clear, simple answer. Always recommend consulting a doctor.
-    """
-    response = model.generate_content(prompt)
-    return response.text
+Give a clear simple answer and recommend consulting a doctor."""
+            }
+        ],
+        max_tokens=500
+    )
+    return response.choices[0].message.content
 
 # ── Main App ───────────────────────────────────────────────
 st.markdown("### 📄 Upload Your Medical Report")
@@ -118,22 +139,24 @@ if uploaded_file is not None:
         # ── Summarize Button ───────────────────────────────
         if st.button("🧠 Summarize My Report", type="primary",
                      use_container_width=True):
-            with st.spinner("🤖 Gemini AI is analyzing your report..."):
-                summary = summarize_report(report_text)
+            with st.spinner("🤖 DeepSeek AI is analyzing your report..."):
+                try:
+                    summary = summarize_report(report_text)
+                    st.markdown("### ✅ Your Report Summary")
+                    st.markdown(f"""
+                    <div class="summary-box">
+                    {summary}
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            st.markdown("### ✅ Your Report Summary")
-            st.markdown(f"""
-            <div class="summary-box">
-            {summary}
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.download_button(
-                label="📥 Download Summary",
-                data=summary,
-                file_name="my_report_summary.txt",
-                mime="text/plain"
-            )
+                    st.download_button(
+                        label="📥 Download Summary",
+                        data=summary,
+                        file_name="my_report_summary.txt",
+                        mime="text/plain"
+                    )
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
 
         st.markdown("---")
 
@@ -146,18 +169,21 @@ if uploaded_file is not None:
         if st.button("💬 Get Answer", use_container_width=True):
             if user_question:
                 with st.spinner("🤔 Thinking..."):
-                    answer = analyze_specific_question(
-                        report_text, user_question
-                    )
-                st.markdown("### 💡 Answer")
-                st.success(answer)
+                    try:
+                        answer = analyze_specific_question(
+                            report_text, user_question
+                        )
+                        st.markdown("### 💡 Answer")
+                        st.success(answer)
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
             else:
                 st.warning("Please type a question first!")
 
 # ── Disclaimer ─────────────────────────────────────────────
 st.markdown("---")
 st.warning("""
-⚕️ **Medical Disclaimer:** This AI summary is for informational
+⚕️ Medical Disclaimer: This AI summary is for informational
 purposes only and does not replace professional medical advice.
 Always consult a qualified doctor for diagnosis and treatment.
 """)
@@ -185,4 +211,4 @@ with st.sidebar:
     st.markdown("💼 [LinkedIn](https://www.linkedin.com/in/althaf-ahamed-810946234)")
     st.markdown("---")
     st.markdown("### 💰 Get Premium Access")
-    st.markdown("DM me on LinkedIn or WhatsApp for premium access!")
+    st.markdown("DM me on LinkedIn or WhatsApp!")
