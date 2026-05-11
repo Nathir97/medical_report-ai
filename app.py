@@ -34,7 +34,7 @@ st.markdown("""
 <div class="main-header">
     <h1>🏥 MedReport AI</h1>
     <p>Understand your medical report in simple language</p>
-    <p>Powered by Groq AI ⚡</p>
+    <p>Powered by althaf AI ⚡</p>
 </div>
 """, unsafe_allow_html=True)
 
