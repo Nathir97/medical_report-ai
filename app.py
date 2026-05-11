@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 import PyPDF2
-import io
 
 # ── Page Config ────────────────────────────────────────────
 st.set_page_config(
@@ -20,12 +19,6 @@ st.markdown("""
         border-radius: 15px;
         color: white;
         margin-bottom: 30px;
-    }
-    .price-box {
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
-        margin: 10px;
     }
     .summary-box {
         background-color: #f0f8ff;
@@ -48,7 +41,7 @@ st.markdown("""
 # ── Configure Gemini API ───────────────────────────────────
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")  # Free & fast
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ── Functions ──────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
@@ -64,40 +57,39 @@ def extract_text_from_pdf(pdf_file):
 def summarize_report(report_text):
     prompt = f"""
     You are a friendly and helpful medical assistant.
-    
-    A patient has uploaded their medical report and needs help 
+
+    A patient has uploaded their medical report and needs help
     understanding it in simple, easy language.
-    
+
     Please analyze this report and provide:
-    
+
     1. 📋 **What This Report Is About** (1-2 sentences)
     2. 🔍 **Key Findings** (bullet points, simple language)
     3. ✅ **What is Normal** (list the normal results)
     4. ⚠️ **What Needs Attention** (list anything abnormal)
     5. 💊 **What This Means For You** (practical explanation)
     6. 🏥 **Next Steps** (what the patient should do)
-    
+
     Use very simple words. Avoid medical jargon.
     If you use a medical term, explain it simply in brackets.
-    
+
     Medical Report:
     {report_text}
-    
+
     End with: "Please consult your doctor for proper medical advice."
     """
-    
     response = model.generate_content(prompt)
     return response.text
 
 def analyze_specific_question(report_text, question):
     prompt = f"""
     Based on this medical report, answer this question in simple language:
-    
+
     Question: {question}
-    
+
     Medical Report:
     {report_text}
-    
+
     Give a clear, simple answer. Always recommend consulting a doctor.
     """
     response = model.generate_content(prompt)
@@ -114,7 +106,6 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     st.success(f"✅ Uploaded: {uploaded_file.name}")
 
-    # Extract text
     with st.spinner("📖 Reading your report..."):
         report_text = extract_text_from_pdf(uploaded_file)
 
@@ -122,37 +113,6 @@ if uploaded_file is not None:
         st.error("❌ Could not read the PDF. Please try another file.")
     else:
         st.info(f"📊 Report contains {len(report_text.split())} words")
-
-        st.markdown("---")
-
-        # ── Pricing Plans ──────────────────────────────────
-        st.markdown("### 💎 Choose Your Plan")
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.markdown("""
-            **🆓 Free**
-            - 1 report/day
-            - Basic summary
-            - PDF support
-            """)
-
-        with col2:
-            st.markdown("""
-            **⭐ Basic — $5/mo**
-            - 10 reports/month
-            - Detailed analysis
-            - Ask questions
-            """)
-
-        with col3:
-            st.markdown("""
-            **👑 Premium — $9/mo**
-            - Unlimited reports
-            - Full analysis
-            - Priority support
-            """)
-
         st.markdown("---")
 
         # ── Summarize Button ───────────────────────────────
@@ -168,7 +128,6 @@ if uploaded_file is not None:
             </div>
             """, unsafe_allow_html=True)
 
-            # Download summary
             st.download_button(
                 label="📥 Download Summary",
                 data=summary,
@@ -195,29 +154,11 @@ if uploaded_file is not None:
             else:
                 st.warning("Please type a question first!")
 
-        st.markdown("---")
-
-        # ── Upgrade Button ─────────────────────────────────
-        st.markdown("### 🚀 Get Unlimited Access")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.link_button(
-                "⭐ Buy Basic — $5/month",
-                "https://gumroad.com/YOUR_PRODUCT_LINK",
-                use_container_width=True
-            )
-        with col2:
-            st.link_button(
-                "👑 Buy Premium — $9/month",
-                "https://gumroad.com/YOUR_PRODUCT_LINK",
-                use_container_width=True
-            )
-
 # ── Disclaimer ─────────────────────────────────────────────
 st.markdown("---")
 st.warning("""
-⚕️ **Medical Disclaimer:** This AI summary is for informational 
-purposes only and does not replace professional medical advice. 
+⚕️ **Medical Disclaimer:** This AI summary is for informational
+purposes only and does not replace professional medical advice.
 Always consult a qualified doctor for diagnosis and treatment.
 """)
 
@@ -238,6 +179,10 @@ with st.sidebar:
     st.metric("Happy Users", "456")
     st.metric("Accuracy", "95%")
     st.markdown("---")
-    st.markdown("### 📞 +94754081094")
+    st.markdown("### 📞 Contact")
+    st.markdown("📱 +94754081094")
     st.markdown("📧 althafahamed075@gmail.com")
     st.markdown("💼 [LinkedIn](https://www.linkedin.com/in/althaf-ahamed-810946234)")
+    st.markdown("---")
+    st.markdown("### 💰 Get Premium Access")
+    st.markdown("DM me on LinkedIn or WhatsApp for premium access!")
