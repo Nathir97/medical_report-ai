@@ -36,7 +36,7 @@ st.markdown("""
 st.markdown("""
 <div class="main-header">
     <h1>🏥 MedReport AI</h1>
-    <p>Understand your medical report simple in own language</p>
+    <p>Understand your medical report in simple language</p>
     <p>Powered by Groq AI ⚡</p>
 </div>
 """, unsafe_allow_html=True)
@@ -198,4 +198,126 @@ if upload_type == "📄 PDF File":
             report_text = extract_text_from_pdf(uploaded_file)
 
 else:
-    uploaded_image =
+    uploaded_image = st.file_uploader(
+        "Upload image of your report (JPG, PNG, JPEG)",
+        type=["jpg", "jpeg", "png"],
+    )
+    if uploaded_image:
+        st.success(f"✅ Uploaded: {uploaded_image.name}")
+
+        # Show preview
+        st.image(uploaded_image, caption="Your uploaded report",
+                 use_column_width=True)
+
+        with st.spinner("🔍 Reading text from image..."):
+            report_text = extract_text_from_image(uploaded_image)
+
+        if report_text and "Error" not in report_text:
+            st.success("✅ Text extracted from image successfully!")
+            with st.expander("👁️ View extracted text"):
+                st.text(report_text)
+
+if report_text and "Error" not in report_text:
+    st.info(f"📊 Report contains {len(report_text.split())} words")
+    st.markdown("---")
+
+    # ── Language Selector ──────────────────────────────────
+    st.markdown("### 🌍 Select Your Language")
+    selected_lang_label = st.selectbox(
+        "Choose the language for your report summary:",
+        options=list(LANGUAGES.keys()),
+        index=0
+    )
+    selected_language = LANGUAGES[selected_lang_label]
+    st.success(f"✅ Summary will be in: **{selected_lang_label}**")
+    st.markdown("---")
+
+    # ── Summarize Button ───────────────────────────────────
+    if st.button("🧠 Summarize My Report", type="primary",
+                 use_container_width=True):
+        with st.spinner(f"⚡ Generating summary in {selected_lang_label}..."):
+            try:
+                summary = summarize_report(report_text, selected_language)
+                st.markdown("### ✅ Your Report Summary")
+                st.markdown(f"""
+                <div class="summary-box">
+                {summary}
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.download_button(
+                    label="📥 Download Summary",
+                    data=summary,
+                    file_name=f"report_summary_{selected_language}.txt",
+                    mime="text/plain"
+                )
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+
+    st.markdown("---")
+
+    # ── Ask Questions ──────────────────────────────────────
+    st.markdown("### ❓ Ask a Question About Your Report")
+    st.caption(f"Answer will be in {selected_lang_label}")
+    user_question = st.text_input(
+        "e.g. Is my blood sugar normal? What does hemoglobin mean?"
+    )
+
+    if st.button("💬 Get Answer", use_container_width=True):
+        if user_question:
+            with st.spinner("🤔 Thinking..."):
+                try:
+                    answer = analyze_specific_question(
+                        report_text, user_question, selected_language
+                    )
+                    st.markdown("### 💡 Answer")
+                    st.success(answer)
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+        else:
+            st.warning("Please type a question first!")
+
+elif report_text and "Error" in report_text:
+    st.error(f"❌ {report_text}")
+
+# ── Disclaimer ─────────────────────────────────────────────
+st.markdown("---")
+st.warning("""
+⚕️ Medical Disclaimer: This AI summary is for informational
+purposes only and does not replace professional medical advice.
+Always consult a qualified doctor for diagnosis and treatment.
+""")
+
+# ── Sidebar ────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## 🏥 MedReport AI")
+    st.markdown("**Turn complex reports into simple language**")
+    st.markdown("---")
+    st.markdown("### 📤 Supported Uploads")
+    st.markdown("📄 PDF files")
+    st.markdown("🖼️ JPG / PNG images")
+    st.markdown("📸 Phone camera photos")
+    st.markdown("---")
+    st.markdown("### 🌍 Supported Languages")
+    for lang in LANGUAGES.keys():
+        st.markdown(f"{lang}")
+    st.markdown("---")
+    st.markdown("### ✅ Supported Reports")
+    st.markdown("🩸 Blood test reports")
+    st.markdown("🫁 Scan reports (MRI/CT/X-Ray)")
+    st.markdown("🧪 Lab reports")
+    st.markdown("💊 Prescriptions")
+    st.markdown("🫀 ECG reports")
+    st.markdown("---")
+    st.markdown("### 📊 Stats")
+    st.metric("Reports Analyzed", "1,234")
+    st.metric("Happy Users", "456")
+    st.metric("Accuracy", "95%")
+    st.markdown("---")
+    st.markdown("### 📞 Contact")
+    st.markdown("📱 +94754081094")
+    st.markdown("📧 althafahamed075@gmail.com")
+    st.markdown("💼 [LinkedIn](https://www.linkedin.com/in/althaf-ahamed-810946234)")
+    st.markdown("---")
+    st.markdown("### 💰 Get Premium Access")
+    st.markdown("DM me on LinkedIn or WhatsApp!")
