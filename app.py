@@ -46,7 +46,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Configure Gemini API ───────────────────────────────────
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"   # 🔑 Paste your key here
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")  # Free & fast
 
