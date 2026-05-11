@@ -239,5 +239,5 @@ with st.sidebar:
     st.metric("Accuracy", "95%")
     st.markdown("---")
     st.markdown("### 📞 +94754081094")
-    st.markdown("📧 althafahamed075@email.com")
+    st.markdown("📧 althafahamed075@gmail.com")
     st.markdown("💼 [LinkedIn](https://www.linkedin.com/in/althaf-ahamed-810946234)")
