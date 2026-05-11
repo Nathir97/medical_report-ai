@@ -41,6 +41,22 @@ st.markdown("""
 # ── Configure Groq ─────────────────────────────────────────
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+# ── Supported Languages ────────────────────────────────────
+LANGUAGES = {
+    "🇬🇧 English": "English",
+    "🇱🇰 Sinhala (සිංහල)": "Sinhala",
+    "🇱🇰 Tamil (தமிழ்)": "Tamil",
+    "🇸🇦 Arabic (عربي)": "Arabic",
+    "🇮🇳 Hindi (हिंदी)": "Hindi",
+    "🇫🇷 French (Français)": "French",
+    "🇩🇪 German (Deutsch)": "German",
+    "🇨🇳 Chinese (中文)": "Chinese",
+    "🇯🇵 Japanese (日本語)": "Japanese",
+    "🇪🇸 Spanish (Español)": "Spanish",
+    "🇵🇹 Portuguese": "Portuguese",
+    "🇮🇩 Malay (Bahasa)": "Malay",
+}
+
 # ── Functions ──────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
     try:
@@ -52,20 +68,22 @@ def extract_text_from_pdf(pdf_file):
     except Exception as e:
         return f"Error reading PDF: {str(e)}"
 
-def summarize_report(report_text):
+def summarize_report(report_text, language):
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
-                "content": """You are a friendly and helpful medical assistant.
-                Explain medical reports in very simple language that anyone
-                can understand. Use bullet points and simple words.
+                "content": f"""You are a friendly and helpful medical assistant.
+                Explain medical reports in very simple language.
+                IMPORTANT: You must respond ONLY in {language} language.
+                Use bullet points and simple words.
                 Always recommend consulting a doctor."""
             },
             {
                 "role": "user",
-                "content": f"""Please analyze this medical report and provide:
+                "content": f"""Please analyze this medical report and provide 
+the response in {language} language:
 
 1. 📋 What This Report Is About (1-2 sentences)
 2. 🔍 Key Findings (bullet points, simple language)
@@ -75,37 +93,37 @@ def summarize_report(report_text):
 6. 🏥 Next Steps (what patient should do)
 
 Use very simple words. Explain medical terms in brackets.
+Respond completely in {language}.
 
 Medical Report:
-{report_text}
-
-End with: Please consult your doctor for proper medical advice."""
+{report_text}"""
             }
         ],
-        max_tokens=1500
+        max_tokens=2000
     )
     return response.choices[0].message.content
 
-def analyze_specific_question(report_text, question):
+def analyze_specific_question(report_text, question, language):
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
-                "content": """You are a helpful medical assistant.
+                "content": f"""You are a helpful medical assistant.
                 Answer questions about medical reports in simple language.
+                IMPORTANT: Respond ONLY in {language} language.
                 Always recommend consulting a doctor."""
             },
             {
                 "role": "user",
-                "content": f"""Based on this medical report, answer:
+                "content": f"""Based on this medical report, answer in {language}:
 
 Question: {question}
 
 Medical Report:
 {report_text}
 
-Give a clear simple answer and recommend consulting a doctor."""
+Give a clear simple answer in {language} language."""
             }
         ],
         max_tokens=500
@@ -132,11 +150,24 @@ if uploaded_file is not None:
         st.info(f"📊 Report contains {len(report_text.split())} words")
         st.markdown("---")
 
+        # ── Language Selector ──────────────────────────────
+        st.markdown("### 🌍 Select Your Language")
+        selected_lang_label = st.selectbox(
+            "Choose the language for your report summary:",
+            options=list(LANGUAGES.keys()),
+            index=0
+        )
+        selected_language = LANGUAGES[selected_lang_label]
+        st.success(f"✅ Summary will be in: **{selected_lang_label}**")
+
+        st.markdown("---")
+
+        # ── Summarize Button ───────────────────────────────
         if st.button("🧠 Summarize My Report", type="primary",
                      use_container_width=True):
-            with st.spinner("⚡ Groq AI is analyzing your report..."):
+            with st.spinner(f"⚡ Generating summary in {selected_lang_label}..."):
                 try:
-                    summary = summarize_report(report_text)
+                    summary = summarize_report(report_text, selected_language)
                     st.markdown("### ✅ Your Report Summary")
                     st.markdown(f"""
                     <div class="summary-box">
@@ -147,7 +178,7 @@ if uploaded_file is not None:
                     st.download_button(
                         label="📥 Download Summary",
                         data=summary,
-                        file_name="my_report_summary.txt",
+                        file_name=f"report_summary_{selected_language}.txt",
                         mime="text/plain"
                     )
                 except Exception as e:
@@ -155,7 +186,9 @@ if uploaded_file is not None:
 
         st.markdown("---")
 
+        # ── Ask Questions ──────────────────────────────────
         st.markdown("### ❓ Ask a Question About Your Report")
+        st.caption(f"Answer will be in {selected_lang_label}")
         user_question = st.text_input(
             "e.g. Is my blood sugar normal? What does hemoglobin mean?"
         )
@@ -165,7 +198,9 @@ if uploaded_file is not None:
                 with st.spinner("🤔 Thinking..."):
                     try:
                         answer = analyze_specific_question(
-                            report_text, user_question
+                            report_text,
+                            user_question,
+                            selected_language
                         )
                         st.markdown("### 💡 Answer")
                         st.success(answer)
@@ -186,6 +221,10 @@ Always consult a qualified doctor for diagnosis and treatment.
 with st.sidebar:
     st.markdown("## 🏥 MedReport AI")
     st.markdown("**Turn complex reports into simple language**")
+    st.markdown("---")
+    st.markdown("### 🌍 Supported Languages")
+    for lang in LANGUAGES.keys():
+        st.markdown(f"{lang}")
     st.markdown("---")
     st.markdown("### ✅ Supported Reports")
     st.markdown("🩸 Blood test reports")
