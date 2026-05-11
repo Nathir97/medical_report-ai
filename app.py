@@ -1,6 +1,6 @@
 import streamlit as st
 import PyPDF2
-from openai import OpenAI
+from groq import Groq
 
 # ── Page Config ────────────────────────────────────────────
 st.set_page_config(
@@ -34,16 +34,12 @@ st.markdown("""
 <div class="main-header">
     <h1>🏥 MedReport AI</h1>
     <p>Understand your medical report in simple language</p>
-    <p>Powered by DeepSeek AI</p>
+    <p>Powered by Groq AI ⚡</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Configure DeepSeek ─────────────────────────────────────
-# DeepSeek uses same format as OpenAI!
-client = OpenAI(
-    api_key=st.secrets["DEEPSEEK_API_KEY"],
-    base_url="https://api.deepseek.com"
-)
+# ── Configure Groq ─────────────────────────────────────────
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # ── Functions ──────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
@@ -58,7 +54,7 @@ def extract_text_from_pdf(pdf_file):
 
 def summarize_report(report_text):
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -78,7 +74,7 @@ def summarize_report(report_text):
 5. 💊 What This Means For You (practical explanation)
 6. 🏥 Next Steps (what patient should do)
 
-Use very simple words. Explain any medical terms in brackets.
+Use very simple words. Explain medical terms in brackets.
 
 Medical Report:
 {report_text}
@@ -92,7 +88,7 @@ End with: Please consult your doctor for proper medical advice."""
 
 def analyze_specific_question(report_text, question):
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -136,10 +132,9 @@ if uploaded_file is not None:
         st.info(f"📊 Report contains {len(report_text.split())} words")
         st.markdown("---")
 
-        # ── Summarize Button ───────────────────────────────
         if st.button("🧠 Summarize My Report", type="primary",
                      use_container_width=True):
-            with st.spinner("🤖 DeepSeek AI is analyzing your report..."):
+            with st.spinner("⚡ Groq AI is analyzing your report..."):
                 try:
                     summary = summarize_report(report_text)
                     st.markdown("### ✅ Your Report Summary")
@@ -160,7 +155,6 @@ if uploaded_file is not None:
 
         st.markdown("---")
 
-        # ── Ask Questions ──────────────────────────────────
         st.markdown("### ❓ Ask a Question About Your Report")
         user_question = st.text_input(
             "e.g. Is my blood sugar normal? What does hemoglobin mean?"
